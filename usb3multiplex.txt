@@ -1,0 +1,229 @@
+#Maintained by: PHPdev32 for: Sourceforge
+#Keep _PRW?
+into device label PR11 code_regex Name\s\(MUXS[^)]+\) remove_matched;
+into device label PR11 insert begin Name (MUXS, "XHCA") end;
+into device label PR12 code_regex Name\s\(MUXS[^)]+\) remove_matched;
+into device label PR12 insert begin Name (MUXS, "XHCB") end;
+into device label PR13 code_regex Name\s\(MUXS[^)]+\) remove_matched;
+into device label PR13 insert begin Name (MUXS, "XHCC") end;
+into device label PR18 code_regex Name\s\(MUXS[^)]+\) remove_matched;
+into device label PR18 insert begin Name (MUXS, "XHCD") end;
+into method label _OSC code_regex NEXP,\sZero replace_matched begin One, OSDW () end;
+into method label _OSC code_regex CTRL,\sOne replace_matched begin CTRL, 0x02 end;
+into method label _OSC code_regex_not PASS insert begin
+}\n
+Else\n
+                 {\n
+                     If (LEqual (Arg0, Buffer (0x10)\n
+                             {\n
+                                 /* 0000 */    0xA9, 0x12, 0x95, 0x7C, 0x05, 0x17, 0xB4, 0x4C, \n
+                                 /* 0008 */    0xAF, 0x7D, 0x50, 0x6A, 0x24, 0x23, 0xAB, 0x71\n
+                             }))\n
+                     {\n
+                         Store (One, ^XHC1.PASS)\n
+                         Store (One, ^XHC1.PAHC)\n
+                         Store (One, ^XHC1.PBSS)\n
+                         Store (One, ^XHC1.PBHC)\n
+                         Store (One, ^XHC1.PCSS)\n
+                         Store (One, ^XHC1.PCHC)\n
+                         Store (One, ^XHC1.PDSS)\n
+                         Store (One, ^XHC1.PDHC)\n
+                     }\n
+                     Return (Local0)\n
+                 }\n
+end;
+into method label _OSC code_regex And\s\(CTRL,\s0xFFFFFFF8,\sCTRL\)\s+\}\s+If\s\(NEXP\) replace_matched begin If (LAnd (LEqual (Arg0, GUID), NEXP)) end;
+into method label _OSC code_regex (\(\)\s+\}\s+\})\s+\} replace_matched begin $1 end;
+into method label _OSC code_regex If\s\(\^XHC\.CUID\s\(Arg0\)\)\s+\{\s+Return\s\(\^XHC\.POSC\s\(Arg1,\sArg2,\sArg3\)\)\s+\}\s+Else\s+\{\s+If\s\(_OSI\s\("Windows\s2012"\)\)\s+\{\s+If\s\(LEqual\s\(XCNT,\sZero\)\)\s+\{\s+\^XHC\.XSEL\s\(\)\s+Increment\s\(XCNT\)\s+\}\s+\}\s+\}\s+If\s\(LEqual\s\(Arg0,\sGUID\)\)\s+\{ remove_matched;
+into method label _INI code_regex (\{\s+)(If\s\(_OSI\s\("Windows\s2001"\)\)) replace_matched begin $1If (_OSI ("Darwin"))\n
+                {\n
+                    Store (0x2710, OSYS)\n
+                }\n$2
+end;
+into method label OSDW remove_entry;
+into definitionblock code_regex . insert begin
+Method (OSDW, 0, NotSerialized)\n
+    {\n
+        If (LEqual (OSYS, 0x2710))\n
+        {\n
+            Return (One)\n
+        }\n
+        Else\n
+        {\n
+            Return (Zero)\n
+        }\n
+    }\n
+end;
+into method label _WAK code_regex \.XWAK replace_matched begin ._INI end;
+into device label XHC set_label begin XHC1 end;
+into_all all code_regex XHC(?!\w) replaceall_matched begin XHC1 end;
+into device label XHC1 code_regex (32\s+\})\s+(Name) replace_matched begin
+$1\nOperationRegion (XH1C, PCI_Config, 0xD0, 0x10)\n
+            Field (XH1C, ByteAcc, NoLock, Preserve)\n
+            {\n
+                PAHC,   1, \n
+                PBHC,   1, \n
+                PCHC,   1, \n
+                PDHC,   1, \n
+                        Offset (0x08), \n
+                PASS,   1, \n
+                PBSS,   1, \n
+                PCSS,   1, \n
+                PDSS,   1\n
+            }\n
+\n
+            OperationRegion (XHC2, PCI_Config, 0x44, 0x04)\n
+            Field (XHC2, ByteAcc, NoLock, Preserve)\n
+            {\n
+                        Offset (0x01), \n
+                MIAI,   2\n
+            }\n$2
+end;
+into method label CUID remove_entry;
+into method label POSC remove_entry;
+into method label XSEL remove_entry;
+into method label ESEL remove_entry;
+into method label XWAK remove_entry;
+into method label _INI parent_label XHC1 remove_entry;
+into device label XHC1 insert begin
+Method (_INI, 0, NotSerialized)\n
+            {\n
+                If (OSDW ())\n
+                {\n
+                    Store (Zero, MIAI)\n
+                }\n
+\n
+                If (LAnd (LGreaterEqual (OSYS, 0x07DC), LLess (OSYS, 0x2710)))\n
+                {\n
+                    Store (One, PASS)\n
+                    Store (One, PAHC)\n
+                    Store (One, PBSS)\n
+                    Store (One, PBHC)\n
+                    Store (One, PCSS)\n
+                    Store (One, PCHC)\n
+                    Store (One, PDSS)\n
+                    Store (One, PDHC)\n
+                }\n
+            }
+end;
+into device label SSP1 remove_entry;
+into device label SSP2 remove_entry;
+into device label SSP3 remove_entry;
+into device label SSP4 remove_entry;
+into device label HSP1 set_label begin PRT1 end;
+into device label HSP2 set_label begin PRT2 end;
+into device label HSP3 set_label begin PRT3 end;
+into device label HSP4 set_label begin PRT4 end;
+into device label PRT1 code_regex Name\s\(MUXS[^)]+\) remove_matched;
+into device label PRT1 insert begin Name (MUXS, "EHCA") end;
+into device label PRT2 code_regex Name\s\(MUXS[^)]+\) remove_matched;
+into device label PRT2 insert begin Name (MUXS, "EHCB") end;
+into device label PRT3 code_regex Name\s\(MUXS[^)]+\) remove_matched;
+into device label PRT3 insert begin Name (MUXS, "EHCC") end;
+into device label PRT4 code_regex Name\s\(MUXS[^)]+\) remove_matched;
+into device label PRT4 insert begin Name (MUXS, "EHCD") end;
+into method label _UPC parent_label PRT1 code_regex If\s\(LNot\s\(And\s\(PR2,\sOne\)\)\)\s+\{\s+Store\s\(Zero,\sIndex\s\(UPCP,\sZero\)\)\s+\} remove_matched;
+into method label _UPC parent_label PRT2 code_regex If\s\(LNot\s\(And\s\(PR2,\s0x02\)\)\)\s+\{\s+Store\s\(Zero,\sIndex\s\(UPCP,\sZero\)\)\s+\} remove_matched;
+into method label _UPC parent_label PRT3 code_regex If\s\(LNot\s\(And\s\(PR2,\s0x04\)\)\)\s+\{\s+Store\s\(Zero,\sIndex\s\(UPCP,\sZero\)\)\s+\} remove_matched;
+into method label _UPC parent_label PRT4 code_regex If\s\(LNot\s\(And\s\(PR2,\s0x08\)\)\)\s+\{\s+Store\s\(Zero,\sIndex\s\(UPCP,\sZero\)\)\s+\} remove_matched;
+into method label _PLD parent_label PRT1 code_regex CreateBitField\s\(DerefOf\s\(Index\s\(PLDP,\sZero\)\),\s0x40,\sVIS\)\s+If\s\(LNot\s\(And\s\(PR2,\sOne\)\)\)\s+\{\s+And\s\(VIS,\sZero,\sVIS\)\s+\} remove_matched;
+into method label _PLD parent_label PRT2 code_regex CreateBitField\s\(DerefOf\s\(Index\s\(PLDP,\sZero\)\),\s0x40,\sVIS\)\s+If\s\(LNot\s\(And\s\(PR2,\s0x02\)\)\)\s+\{\s+And\s\(VIS,\sZero,\sVIS\)\s+\} remove_matched;
+into method label _PLD parent_label PRT3 code_regex CreateBitField\s\(DerefOf\s\(Index\s\(PLDP,\sZero\)\),\s0x40,\sVIS\)\s+If\s\(LNot\s\(And\s\(PR2,\s0x04\)\)\)\s+\{\s+And\s\(VIS,\sZero,\sVIS\)\s+\} remove_matched;
+into method label _PLD parent_label PRT4 code_regex CreateBitField\s\(DerefOf\s\(Index\s\(PLDP,\sZero\)\),\s0x40,\sVIS\)\s+If\s\(LNot\s\(And\s\(PR2,\s0x08\)\)\)\s+\{\s+And\s\(VIS,\sZero,\sVIS\)\s+\} remove_matched;
+into method label _DSM parent_label XHC1 remove_entry;
+into method label XHCA parent_label XHC1 remove_entry;
+into method label XHCB parent_label XHC1 remove_entry;
+into method label XHCC parent_label XHC1 remove_entry;
+into method label XHCD parent_label XHC1 remove_entry;
+into method label EHCA parent_label XHC1 remove_entry;
+into method label EHCB parent_label XHC1 remove_entry;
+into method label EHCC parent_label XHC1 remove_entry;
+into method label EHCD parent_label XHC1 remove_entry;
+into device label XHC1 insert begin
+Method (_DSM, 4, NotSerialized)\n
+            {\n
+                Store (Package (0x0B)\n
+                    {\n
+                        "AAPL,current-available", \n
+                        0x0834, \n
+                        "AAPL,current-extra", \n
+                        0x0898, \n
+                        "AAPL,current-extra-in-sleep", \n
+                        0x0640, \n
+                        "AAPL,max-port-current-in-sleep", \n
+                        0x0834, \n
+                        "AAPL,device-internal", \n
+                        Zero, \n
+                        Buffer (One)\n
+                        {\n
+                            0x00\n
+                        }\n
+                    }, Local0)\n
+                DTGP (Arg0, Arg1, Arg2, Arg3, RefOf (Local0))\n
+                Return (Local0)\n
+            }\n
+            Method (XHCA, 0, NotSerialized)\n
+            {\n
+                If (LNot (OSDW ()))\n
+                {\n
+                    Store (One, PASS)\n
+                }\n
+                Store (One, PAHC)\n
+            }\n
+            Method (XHCB, 0, NotSerialized)\n
+            {\n
+                If (LNot (OSDW ()))\n
+                {\n
+                    Store (One, PBSS)\n
+                }\n
+                Store (One, PBHC)\n
+            }\n
+            Method (XHCC, 0, NotSerialized)\n
+            {\n
+                If (LNot (OSDW ()))\n
+                {\n
+                    Store (One, PCSS)\n
+                }\n
+                Store (One, PCHC)\n
+            }\n
+            Method (XHCD, 0, NotSerialized)\n
+            {\n
+                If (LNot (OSDW ()))\n
+                {\n
+                    Store (One, PDSS)\n
+                }\n
+                Store (One, PDHC)\n
+            }\n
+            Method (EHCA, 0, NotSerialized)\n
+            {\n
+                If (LNot (OSDW ()))\n
+                {\n
+                    Store (Zero, PASS)\n
+                }\n
+                Store (Zero, PAHC)\n
+            }\n
+            Method (EHCB, 0, NotSerialized)\n
+            {\n
+                If (LNot (OSDW ()))\n
+                {\n
+                    Store (Zero, PBSS)\n
+                }\n
+                Store (Zero, PBHC)\n
+            }\n
+            Method (EHCC, 0, NotSerialized)\n
+            {\n
+                If (LNot (OSDW ()))\n
+                {\n
+                    Store (Zero, PCSS)\n
+                }\n
+                Store (Zero, PCHC)\n
+            }\n
+            Method (EHCD, 0, NotSerialized)\n
+            {\n
+                If (LNot (OSDW ()))\n
+                {\n
+                    Store (Zero, PDSS)\n
+                }\n
+                Store (Zero, PDHC)\n
+            }
+end;
